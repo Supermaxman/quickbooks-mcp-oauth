@@ -2,6 +2,48 @@
 
 import { z } from "zod";
 
+export type QuickBooksTable =
+  | "Customer"
+  | "Invoice"
+  | "Item"
+  | "Payment"
+  | "Purchase"
+  | "Vendor";
+
+export const TABLE_DEFAULT_SORT: Record<QuickBooksTable, string> = {
+  Customer: "Name ASC",
+  Invoice: "DueDate DESC",
+  Item: "Name ASC",
+  Payment: "Id DESC",
+  Purchase: "Id DESC",
+  Vendor: "Name ASC",
+};
+
+// 2. Shared paging fields
+type Paging = {
+  startPosition: number;
+  maxResults: number;
+  totalCount: number;
+};
+
+/**
+ * 3. Generic API wrapper
+ *
+ *  * `T` – the shape of each row (e.g. `Invoice`, `Customer`, …).
+ *  * `K` – *exactly one* table name from `QuickBooksTable`.
+ *
+ * `QueryResponse` ends up with **one and only one**
+property whose name is that table name and
+whose value is `T[]`.
+ */
+export type QuickBooksQueryResponse<T, K extends QuickBooksTable> = {
+  QueryResponse: // the one real list
+  { [P in K]: T[] } & // disallow every **other** table name
+  { [P in Exclude<QuickBooksTable, K>]?: never } & // paging info
+    Paging;
+  time: string;
+};
+
 export const CalendarEventSchema = z
   .object({
     /* ----------------------------------------------------

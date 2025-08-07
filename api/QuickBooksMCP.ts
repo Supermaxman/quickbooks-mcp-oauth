@@ -65,6 +65,50 @@ export class QuickBooksMCP extends McpAgent<
       }
     );
 
+    server.tool(
+      "getInvoices",
+      "Get QuickBooks invoices, sorted by due date descending. Returns a list of invoices.",
+      {
+        page: z
+          .number()
+          .default(0)
+          .describe("The page number to get (0-indexed, default 0)"),
+        pageSize: z
+          .number()
+          .default(10)
+          .describe("The number of invoices to get per page (default 10)"),
+      },
+      async ({ page, pageSize }) => {
+        const invoices = await this.quickBooksService.getInvoices(
+          page,
+          pageSize
+        );
+        return this.formatResponse("Invoices retrieved", invoices);
+      }
+    );
+
+    server.tool(
+      "getCustomers",
+      "Get QuickBooks customers, sorted by name ascending. Returns a list of customers.",
+      {
+        page: z
+          .number()
+          .default(0)
+          .describe("The page number to get (0-indexed, default 0)"),
+        pageSize: z
+          .number()
+          .default(10)
+          .describe("The number of customers to get per page (default 10)"),
+      },
+      async ({ page, pageSize }) => {
+        const customers = await this.quickBooksService.getCustomers(
+          page,
+          pageSize
+        );
+        return this.formatResponse("Customers retrieved", customers);
+      }
+    );
+
     return server;
   }
 }
