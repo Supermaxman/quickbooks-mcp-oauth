@@ -2,6 +2,7 @@
 interface Env {
   QUICKBOOKS_CLIENT_ID: string;
   QUICKBOOKS_CLIENT_SECRET: string;
+  QUICKBOOKS_ACCOUNT_ID: string;
   QUICKBOOKS_MCP_OBJECT: DurableObjectNamespace;
 }
 

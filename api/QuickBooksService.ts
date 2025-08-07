@@ -9,7 +9,10 @@ export class QuickBooksService {
     this.refreshToken = refreshToken;
   }
 
-  private async makeRequest<T>(url: string, options: RequestInit = {}): Promise<T> {
+  private async makeRequest<T>(
+    url: string,
+    options: RequestInit = {}
+  ): Promise<T> {
     const res = await fetch(url, {
       ...options,
       headers: {
@@ -69,8 +72,8 @@ export class QuickBooksService {
   }
 
   // Example QuickBooks API call: fetch company info
-  async getCompanyInfo(realmId: string): Promise<unknown> {
-    const url = `https://quickbooks.api.intuit.com/v3/company/${realmId}/companyinfo/${realmId}`;
+  async getCompanyInfo(): Promise<unknown> {
+    const url = `https://quickbooks.api.intuit.com/v3/company/${this.env.QUICKBOOKS_ACCOUNT_ID}/companyinfo/${this.env.QUICKBOOKS_ACCOUNT_ID}`;
     return this.makeRequest<unknown>(url, { method: "GET" });
   }
 }

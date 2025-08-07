@@ -8,7 +8,11 @@ import { QuickBooksAuthContext } from "../types";
  * The `QuickBooksMCP` class exposes the QuickBooks API via the Model Context Protocol
  * for consumption by API Agents
  */
-export class QuickBooksMCP extends McpAgent<Env, unknown, QuickBooksAuthContext> {
+export class QuickBooksMCP extends McpAgent<
+  Env,
+  unknown,
+  QuickBooksAuthContext
+> {
   async init() {}
 
   get quickBooksService() {
@@ -55,11 +59,8 @@ export class QuickBooksMCP extends McpAgent<Env, unknown, QuickBooksAuthContext>
     server.tool(
       "getCompanyInfo",
       "Get QuickBooks company information",
-      {
-        realmId: z.string().describe("QuickBooks realm/company id"),
-      },
-      async ({ realmId }) => {
-        const info = await this.quickBooksService.getCompanyInfo(realmId);
+      async () => {
+        const info = await this.quickBooksService.getCompanyInfo();
         return this.formatResponse("Company info retrieved", info);
       }
     );

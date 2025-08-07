@@ -6,6 +6,7 @@ declare namespace Cloudflare {
     ASSETS: Fetcher;
     QUICKBOOKS_CLIENT_ID: string;
     QUICKBOOKS_CLIENT_SECRET: string;
+    QUICKBOOKS_ACCOUNT_ID: string;
     QUICKBOOKS_MCP_OBJECT: DurableObjectNamespace<
       import("./api/index").QuickBooksMCP
     >;

@@ -44,8 +44,9 @@ export default new Hono<{ Bindings: Env }>()
         "openid",
         "profile",
         "email",
-        "com.intuit.quickbooks.accounting",
         "offline_access",
+        // TODO: Add more scopes as needed
+        "com.intuit.quickbooks.accounting",
       ],
     });
   })
