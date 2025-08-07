@@ -1,15 +1,15 @@
-import { MicrosoftMCP } from "./MicrosoftMCP.ts";
+import { QuickBooksMCP } from "./QuickBooksMCP.ts";
 import {
-  microsoftBearerTokenAuthMiddleware,
-  getMicrosoftAuthEndpoint,
+  quickBooksBearerTokenAuthMiddleware,
+  getQuickBooksAuthEndpoint,
   exchangeCodeForToken,
   refreshAccessToken,
-} from "./lib/microsoft-auth.ts";
+} from "./lib/quickbooks-auth.ts";
 import { cors } from "hono/cors";
 import { Hono } from "hono";
 
-// Export the MicrosoftMCP class so the Worker runtime can find it
-export { MicrosoftMCP };
+// Export the QuickBooksMCP class so the Worker runtime can find it
+export { QuickBooksMCP };
 
 // Store registered clients in memory (in production, use a database)
 interface RegisteredClient {
@@ -43,15 +43,9 @@ export default new Hono<{ Bindings: Env }>()
       scopes_supported: [
         "openid",
         "profile",
+        "email",
+        "com.intuit.quickbooks.accounting",
         "offline_access",
-        // TODO: Add scopes for quickbooks
-        // "Calendars.ReadWrite",
-        // "Mail.ReadWrite",
-        // "Mail.Send",
-        // "User.Read",
-        // "People.Read",
-        // "Contacts.ReadWrite",
-        // "MailboxSettings.Read",
       ],
     });
   })
@@ -93,25 +87,23 @@ export default new Hono<{ Bindings: Env }>()
     );
   })
 
-  // Authorization endpoint - redirects to Microsoft
+  // Authorization endpoint - redirects to QuickBooks
   .get("/authorize", async (c) => {
     const url = new URL(c.req.url);
-    const microsoftAuthUrl = new URL(
-      getMicrosoftAuthEndpoint(c.env.MICROSOFT_TENANT_ID, "authorize")
-    );
+    const quickbooksAuthUrl = new URL(getQuickBooksAuthEndpoint("authorize"));
 
     // Copy all query parameters except client_id
     url.searchParams.forEach((value, key) => {
       if (key !== "client_id") {
-        microsoftAuthUrl.searchParams.set(key, value);
+        quickbooksAuthUrl.searchParams.set(key, value);
       }
     });
 
-    // Use our Microsoft app's client_id
-    microsoftAuthUrl.searchParams.set("client_id", c.env.MICROSOFT_CLIENT_ID);
+    // Use our QuickBooks app's client_id
+    quickbooksAuthUrl.searchParams.set("client_id", c.env.QUICKBOOKS_CLIENT_ID);
 
-    // Redirect to Microsoft's authorization page
-    return c.redirect(microsoftAuthUrl.toString());
+    // Redirect to QuickBooks's authorization page
+    return c.redirect(quickbooksAuthUrl.toString());
   })
 
   // Token exchange endpoint
@@ -122,18 +114,16 @@ export default new Hono<{ Bindings: Env }>()
       const result = await exchangeCodeForToken(
         body.code as string,
         body.redirect_uri as string,
-        c.env.MICROSOFT_CLIENT_ID,
-        c.env.MICROSOFT_CLIENT_SECRET,
-        c.env.MICROSOFT_TENANT_ID,
+        c.env.QUICKBOOKS_CLIENT_ID,
+        c.env.QUICKBOOKS_CLIENT_SECRET,
         body.code_verifier as string | undefined
       );
       return c.json(result);
     } else if (body.grant_type === "refresh_token") {
       const result = await refreshAccessToken(
         body.refresh_token as string,
-        c.env.MICROSOFT_CLIENT_ID,
-        c.env.MICROSOFT_CLIENT_SECRET,
-        c.env.MICROSOFT_TENANT_ID
+        c.env.QUICKBOOKS_CLIENT_ID,
+        c.env.QUICKBOOKS_CLIENT_SECRET
       );
       return c.json(result);
     }
@@ -141,24 +131,24 @@ export default new Hono<{ Bindings: Env }>()
     return c.json({ error: "unsupported_grant_type" }, 400);
   })
 
-  // Microsoft MCP endpoints
-  .use("/sse/*", microsoftBearerTokenAuthMiddleware)
+  // QuickBooks MCP endpoints
+  .use("/sse/*", quickBooksBearerTokenAuthMiddleware)
   .route(
     "/sse",
     new Hono().mount(
       "/",
-      MicrosoftMCP.serveSSE("/sse", { binding: "MICROSOFT_MCP_OBJECT" }).fetch
+      QuickBooksMCP.serveSSE("/sse", { binding: "QUICKBOOKS_MCP_OBJECT" }).fetch
     )
   )
 
-  .use("/mcp", microsoftBearerTokenAuthMiddleware)
+  .use("/mcp", quickBooksBearerTokenAuthMiddleware)
   .route(
     "/mcp",
     new Hono().mount(
       "/",
-      MicrosoftMCP.serve("/mcp", { binding: "MICROSOFT_MCP_OBJECT" }).fetch
+      QuickBooksMCP.serve("/mcp", { binding: "QUICKBOOKS_MCP_OBJECT" }).fetch
     )
   )
 
   // Health check endpoint
-  .get("/", (c) => c.text("Microsoft MCP Server is running"));
+  .get("/", (c) => c.text("QuickBooks MCP Server is running"));

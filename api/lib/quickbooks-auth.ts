@@ -3,7 +3,7 @@ import { HTTPException } from "hono/http-exception";
 
 /* ---------- Bearer-token middleware ---------- */
 
-export const microsoftBearerTokenAuthMiddleware = createMiddleware<{
+export const quickBooksBearerTokenAuthMiddleware = createMiddleware<{
   Bindings: Env;
 }>(async (c, next) => {
   const auth = c.req.header("Authorization") ?? "";
@@ -13,9 +13,8 @@ export const microsoftBearerTokenAuthMiddleware = createMiddleware<{
     });
   }
 
-  // Slice off "Bearer "
   const accessToken = auth.slice(7);
-  const refreshToken = c.req.header("X-Microsoft-Refresh-Token") ?? "";
+  const refreshToken = c.req.header("X-QuickBooks-Refresh-Token") ?? "";
 
   // @ts-expect-error  – Cloudflare Workers executionCtx props
   c.executionCtx.props = { accessToken, refreshToken };
@@ -24,33 +23,28 @@ export const microsoftBearerTokenAuthMiddleware = createMiddleware<{
 
 /* ---------- Helpers ---------- */
 
-export const MICROSOFT_GRAPH_DEFAULT_SCOPES = [
+export const QUICKBOOKS_DEFAULT_SCOPES = [
+  "com.intuit.quickbooks.accounting",
   "openid",
   "profile",
-  "offline_access", // <-- needed to receive a refresh_token
-  "Calendars.ReadWrite",
-  "Mail.ReadWrite",
-  "Mail.Send",
-  "User.Read",
-  "People.Read",
-  "Contacts.ReadWrite",
-  "MailboxSettings.Read",
+  "email",
+  "offline_access",
 ];
 
-export function getMicrosoftAuthEndpoint(
-  tenantId: string,
+export function getQuickBooksAuthEndpoint(
   endpoint: "authorize" | "token"
 ): string {
-  return `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/${endpoint}`;
+  return endpoint === "authorize"
+    ? "https://appcenter.intuit.com/connect/oauth2"
+    : "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer";
 }
 
 type TokenResponse = {
   access_token: string;
   token_type: string;
-  scope: string;
   expires_in: number;
   refresh_token?: string;
-  id_token?: string;
+  scope?: string;
 };
 
 function form(params: Record<string, string | undefined>): URLSearchParams {
@@ -67,24 +61,26 @@ export async function exchangeCodeForToken(
   code: string,
   redirectUri: string,
   clientId: string,
-  clientSecret: string | undefined,
-  tenantId: string,
+  clientSecret: string,
   codeVerifier?: string,
-  scopes: string[] = MICROSOFT_GRAPH_DEFAULT_SCOPES
+  scopes: string[] = QUICKBOOKS_DEFAULT_SCOPES
 ): Promise<TokenResponse> {
   const body = form({
-    client_id: clientId,
-    client_secret: clientSecret,
     grant_type: "authorization_code",
     code,
     redirect_uri: redirectUri,
-    scope: scopes.join(" "),
     code_verifier: codeVerifier,
+    scope: scopes.join(" "),
   });
 
-  const res = await fetch(getMicrosoftAuthEndpoint(tenantId, "token"), {
+  const basicAuth = btoa(`${clientId}:${clientSecret}`);
+
+  const res = await fetch(getQuickBooksAuthEndpoint("token"), {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    headers: {
+      Authorization: `Basic ${basicAuth}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
     body,
   });
 
@@ -97,21 +93,23 @@ export async function exchangeCodeForToken(
 export async function refreshAccessToken(
   refreshToken: string,
   clientId: string,
-  clientSecret: string | undefined,
-  tenantId: string,
-  scopes: string[] = MICROSOFT_GRAPH_DEFAULT_SCOPES
+  clientSecret: string,
+  scopes: string[] = QUICKBOOKS_DEFAULT_SCOPES
 ): Promise<TokenResponse> {
   const body = form({
-    client_id: clientId,
-    client_secret: clientSecret,
     grant_type: "refresh_token",
     refresh_token: refreshToken,
     scope: scopes.join(" "),
   });
 
-  const res = await fetch(getMicrosoftAuthEndpoint(tenantId, "token"), {
+  const basicAuth = btoa(`${clientId}:${clientSecret}`);
+
+  const res = await fetch(getQuickBooksAuthEndpoint("token"), {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    headers: {
+      Authorization: `Basic ${basicAuth}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
     body,
   });
 
