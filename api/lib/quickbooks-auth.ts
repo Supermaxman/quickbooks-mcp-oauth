@@ -23,13 +23,7 @@ export const quickBooksBearerTokenAuthMiddleware = createMiddleware<{
 
 /* ---------- Helpers ---------- */
 
-export const QUICKBOOKS_DEFAULT_SCOPES = [
-  "com.intuit.quickbooks.accounting",
-  "openid",
-  "profile",
-  "email",
-  "offline_access",
-];
+export const QUICKBOOKS_DEFAULT_SCOPES = ["com.intuit.quickbooks.accounting"];
 
 export function getQuickBooksAuthEndpoint(
   endpoint: "authorize" | "token"

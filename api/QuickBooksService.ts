@@ -18,6 +18,7 @@ export class QuickBooksService {
       headers: {
         Authorization: `Bearer ${this.accessToken}`,
         "Content-Type": "application/json",
+        Accept: "application/json",
         ...options.headers,
       },
     });

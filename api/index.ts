@@ -40,14 +40,7 @@ export default new Hono<{ Bindings: Env }>()
       grant_types_supported: ["authorization_code", "refresh_token"],
       token_endpoint_auth_methods_supported: ["none"],
       code_challenge_methods_supported: ["S256"],
-      scopes_supported: [
-        "openid",
-        "profile",
-        "email",
-        "offline_access",
-        // TODO: Add more scopes as needed
-        "com.intuit.quickbooks.accounting",
-      ],
+      scopes_supported: ["com.intuit.quickbooks.accounting"],
     });
   })
 
