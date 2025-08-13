@@ -32,7 +32,6 @@ type AuthenticationContext = {
 // Context from the QuickBooks OAuth process
 export type QuickBooksAuthContext = {
   accessToken: string;
-  refreshToken: string;
   expiresIn?: number;
   tokenType?: string;
   scope?: string;

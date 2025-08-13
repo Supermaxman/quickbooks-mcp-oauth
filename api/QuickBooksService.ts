@@ -7,13 +7,11 @@ import {
 export class QuickBooksService {
   private env: Env;
   private accessToken: string;
-  private refreshToken: string;
   private baseUrl: string;
 
-  constructor(env: Env, accessToken: string, refreshToken: string) {
+  constructor(env: Env, accessToken: string) {
     this.env = env;
     this.accessToken = accessToken;
-    this.refreshToken = refreshToken;
     this.baseUrl = `https://quickbooks.api.intuit.com/v3/company/${this.env.QUICKBOOKS_ACCOUNT_ID}`;
   }
 
@@ -31,53 +29,11 @@ export class QuickBooksService {
       },
     });
 
-    if (res.status === 401) {
-      await this.refreshAccessToken();
-      return this.makeRequest<T>(url, options);
-    }
-
     if (!res.ok) {
       throw new Error(`QuickBooks API error: ${res.status} ${res.statusText}`);
     }
 
     return (await res.json()) as T;
-  }
-
-  private async refreshAccessToken(): Promise<void> {
-    const body = new URLSearchParams({
-      grant_type: "refresh_token",
-      refresh_token: this.refreshToken,
-    });
-
-    const basicAuth = btoa(
-      `${this.env.QUICKBOOKS_CLIENT_ID}:${this.env.QUICKBOOKS_CLIENT_SECRET}`
-    );
-
-    const res = await fetch(
-      "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Basic ${basicAuth}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body,
-      }
-    );
-
-    if (!res.ok) {
-      throw new Error(`Failed to refresh access token: ${await res.text()}`);
-    }
-
-    const { access_token, refresh_token } = (await res.json()) as {
-      access_token: string;
-      refresh_token?: string;
-    };
-
-    this.accessToken = access_token;
-    if (refresh_token) {
-      this.refreshToken = refresh_token;
-    }
   }
 
   // TODO add filtering support

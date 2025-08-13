@@ -33,6 +33,17 @@ export function getQuickBooksAuthEndpoint(
     : "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer";
 }
 
+export class OAuthHttpError extends Error {
+  status: number;
+  body: unknown;
+  constructor(message: string, status: number, body: unknown) {
+    super(message);
+    this.name = "OAuthHttpError";
+    this.status = status;
+    this.body = body;
+  }
+}
+
 type TokenResponse = {
   access_token: string;
   token_type: string;
@@ -57,14 +68,14 @@ export async function exchangeCodeForToken(
   clientId: string,
   clientSecret: string,
   codeVerifier?: string,
-  scopes: string[] = QUICKBOOKS_DEFAULT_SCOPES
+  scope?: string
 ): Promise<TokenResponse> {
   const body = form({
     grant_type: "authorization_code",
     code,
     redirect_uri: redirectUri,
+    scope,
     code_verifier: codeVerifier,
-    scope: scopes.join(" "),
   });
 
   const basicAuth = btoa(`${clientId}:${clientSecret}`);
@@ -78,7 +89,22 @@ export async function exchangeCodeForToken(
     body,
   });
 
-  if (!res.ok) throw new Error(`Token exchange failed: ${await res.text()}`);
+  if (!res.ok) {
+    const isJson = (res.headers.get("content-type") || "").includes(
+      "application/json"
+    );
+    const errorBody = isJson
+      ? await res.json().catch(() => ({ error: "server_error" }))
+      : {
+          error: "server_error",
+          error_description: await res.text().catch(() => ""),
+        };
+    throw new OAuthHttpError(
+      "Token exchange failed",
+      res.status || 400,
+      errorBody
+    );
+  }
   return res.json() as Promise<TokenResponse>;
 }
 
@@ -107,6 +133,17 @@ export async function refreshAccessToken(
     body,
   });
 
-  if (!res.ok) throw new Error(`Refresh failed: ${await res.text()}`);
+  if (!res.ok) {
+    const isJson = (res.headers.get("content-type") || "").includes(
+      "application/json"
+    );
+    const errorBody = isJson
+      ? await res.json().catch(() => ({ error: "server_error" }))
+      : {
+          error: "server_error",
+          error_description: await res.text().catch(() => ""),
+        };
+    throw new OAuthHttpError("Refresh failed", res.status || 400, errorBody);
+  }
   return res.json() as Promise<TokenResponse>;
 }

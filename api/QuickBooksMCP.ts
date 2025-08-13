@@ -16,11 +16,7 @@ export class QuickBooksMCP extends McpAgent<
   async init() {}
 
   get quickBooksService() {
-    return new QuickBooksService(
-      this.env,
-      this.props.accessToken,
-      this.props.refreshToken
-    );
+    return new QuickBooksService(this.env, this.props.accessToken);
   }
 
   formatResponse = (
