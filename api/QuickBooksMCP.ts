@@ -67,10 +67,13 @@ export class QuickBooksMCP extends McpAgent<
       {
         page: z
           .number()
+          .min(0)
           .default(0)
           .describe("The page number to get (0-indexed, default 0)"),
         pageSize: z
           .number()
+          .min(1)
+          .max(20)
           .default(10)
           .describe("The number of invoices to get per page (default 10)"),
       },
@@ -89,10 +92,13 @@ export class QuickBooksMCP extends McpAgent<
       {
         page: z
           .number()
+          .min(0)
           .default(0)
           .describe("The page number to get (0-indexed, default 0)"),
         pageSize: z
           .number()
+          .min(1)
+          .max(20)
           .default(10)
           .describe("The number of customers to get per page (default 10)"),
       },
