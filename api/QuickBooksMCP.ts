@@ -3,6 +3,11 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { QuickBooksService } from "./QuickBooksService.ts";
 import { QuickBooksAuthContext } from "../types";
+import {
+  UpdateInvoiceSchema,
+  CopyInvoiceSchema,
+  CreateInvoiceSchema,
+} from "./lib/quickbooks-types";
 
 /**
  * The `QuickBooksMCP` class exposes the QuickBooks API via the Model Context Protocol
@@ -108,6 +113,39 @@ export class QuickBooksMCP extends McpAgent<
           pageSize
         );
         return this.formatResponse("Customers retrieved", customers);
+      }
+    );
+
+    server.tool(
+      "updateInvoice",
+      "Update an existing invoice by Id using sparse update (only provided fields will change). Returns the updated invoice.",
+      UpdateInvoiceSchema.shape,
+      async (args) => {
+        const parsed = UpdateInvoiceSchema.parse(args);
+        const updated = await this.quickBooksService.updateInvoice(parsed);
+        return this.formatResponse("Invoice updated", updated);
+      }
+    );
+
+    server.tool(
+      "copyInvoice",
+      "Create a new invoice by copying fields from an existing invoice Id. Returns the created invoice.",
+      CopyInvoiceSchema.shape,
+      async (args) => {
+        const { Id } = CopyInvoiceSchema.parse(args);
+        const created = await this.quickBooksService.copyInvoice(Id);
+        return this.formatResponse("Invoice copied", created);
+      }
+    );
+
+    server.tool(
+      "createInvoice",
+      "Create a new invoice from scratch. Returns the created invoice.",
+      CreateInvoiceSchema.shape,
+      async (args) => {
+        const parsed = CreateInvoiceSchema.parse(args);
+        const created = await this.quickBooksService.createInvoice(parsed);
+        return this.formatResponse("Invoice created", created);
       }
     );
 

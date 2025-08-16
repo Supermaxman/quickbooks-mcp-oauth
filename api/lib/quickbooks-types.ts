@@ -38,9 +38,7 @@ whose value is `T[]`.
  */
 export type QuickBooksQueryResponse<T, K extends QuickBooksTable> = {
   QueryResponse: // the one real list
-  { [P in K]: T[] } & // disallow every **other** table name
-  { [P in Exclude<QuickBooksTable, K>]?: never } & // paging info
-    Paging;
+  { [P in K]: T[] } & { [P in Exclude<QuickBooksTable, K>]?: never } & Paging; // disallow every **other** table name // paging info
   time: string;
 };
 
@@ -116,3 +114,98 @@ export const CalendarEventSchema = z
   .strip(); // <-- ✨ rejects *any* unknown keys
 
 export type CalendarEventStrict = z.infer<typeof CalendarEventSchema>;
+
+/* -------------------------------- QuickBooks Invoice schemas ------------------------------- */
+
+export const QuickBooksReferenceSchema = z.object({
+  value: z.string(),
+  name: z.string().optional(),
+});
+
+export const QuickBooksEmailSchema = z.object({
+  Address: z.string().email(),
+});
+
+export const QuickBooksPostalAddressSchema = z.object({
+  Id: z.string().optional(),
+  Line1: z.string().optional(),
+  Line2: z.string().optional(),
+  Line3: z.string().optional(),
+  Line4: z.string().optional(),
+  City: z.string().optional(),
+  Country: z.string().optional(),
+  CountrySubDivisionCode: z.string().optional(),
+  PostalCode: z.string().optional(),
+});
+
+// Keep line items broad to support many QuickBooks variants without overspecifying
+export const QuickBooksInvoiceLineSchema = z.any();
+
+export const UpdateInvoiceSchema = z
+  .object({
+    Id: z.string(),
+    SyncToken: z.string(),
+    DocNumber: z.string().optional(),
+    TxnDate: z.string().optional(),
+    DueDate: z.string().optional(),
+    PrivateNote: z.string().optional(),
+    CustomerRef: QuickBooksReferenceSchema.optional(),
+    CurrencyRef: QuickBooksReferenceSchema.optional(),
+    BillEmail: QuickBooksEmailSchema.optional(),
+    BillAddr: QuickBooksPostalAddressSchema.optional(),
+    ShipAddr: QuickBooksPostalAddressSchema.optional(),
+    SalesTermRef: QuickBooksReferenceSchema.optional(),
+    ApplyTaxAfterDiscount: z.boolean().optional(),
+    AllowIPNPayment: z.boolean().optional(),
+    AllowOnlinePayment: z.boolean().optional(),
+    AllowOnlineCreditCardPayment: z.boolean().optional(),
+    AllowOnlineACHPayment: z.boolean().optional(),
+    CustomerMemo: z.any().optional(),
+    TxnTaxDetail: z.any().optional(),
+    Line: z.array(QuickBooksInvoiceLineSchema).optional(),
+  })
+  .strip();
+
+export type UpdateInvoiceInput = z.infer<typeof UpdateInvoiceSchema>;
+
+export const CopyInvoiceSchema = z
+  .object({
+    Id: z.string(),
+  })
+  .strip();
+
+export type CopyInvoiceInput = z.infer<typeof CopyInvoiceSchema>;
+
+export const DeleteInvoiceSchema = z
+  .object({
+    Id: z.string(),
+    SyncToken: z.string(),
+  })
+  .strip();
+
+export type DeleteInvoiceInput = z.infer<typeof DeleteInvoiceSchema>;
+
+export const CreateInvoiceSchema = z
+  .object({
+    CustomerRef: QuickBooksReferenceSchema,
+    Line: z.array(QuickBooksInvoiceLineSchema).min(1),
+    DocNumber: z.string().optional(),
+    TxnDate: z.string().optional(),
+    DueDate: z.string().optional(),
+    PrivateNote: z.string().optional(),
+    CurrencyRef: QuickBooksReferenceSchema.optional(),
+    BillEmail: QuickBooksEmailSchema.optional(),
+    BillAddr: QuickBooksPostalAddressSchema.optional(),
+    ShipAddr: QuickBooksPostalAddressSchema.optional(),
+    SalesTermRef: QuickBooksReferenceSchema.optional(),
+    ApplyTaxAfterDiscount: z.boolean().optional(),
+    AllowIPNPayment: z.boolean().optional(),
+    AllowOnlinePayment: z.boolean().optional(),
+    AllowOnlineCreditCardPayment: z.boolean().optional(),
+    AllowOnlineACHPayment: z.boolean().optional(),
+    CustomerMemo: z.any().optional(),
+    TxnTaxDetail: z.any().optional(),
+  })
+  .strip();
+
+export type CreateInvoiceInput = z.infer<typeof CreateInvoiceSchema>;

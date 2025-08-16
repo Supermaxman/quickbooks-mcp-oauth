@@ -2,6 +2,8 @@ import {
   QuickBooksQueryResponse,
   QuickBooksTable,
   TABLE_DEFAULT_SORT,
+  UpdateInvoiceInput,
+  CreateInvoiceInput,
 } from "./lib/quickbooks-types";
 
 export class QuickBooksService {
@@ -82,5 +84,73 @@ export class QuickBooksService {
       pageSize
     );
     return resp.QueryResponse.Customer;
+  }
+
+  /**
+   * Update an existing invoice using QuickBooks sparse update.
+   * Requires `Id` and `SyncToken`. Any unspecified fields are left unchanged.
+   */
+  async updateInvoice(invoice: UpdateInvoiceInput): Promise<unknown> {
+    const url = `${this.baseUrl}/invoice?operation=update`;
+    const payload = { ...invoice, sparse: true } as Record<string, unknown>;
+    return this.makeRequest<unknown>(url, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  /**
+   * Copy an existing invoice by fetching it and creating a new invoice from its core fields.
+   * The new invoice will omit identifiers and metadata so QuickBooks can assign new values.
+   */
+  async copyInvoice(id: string): Promise<unknown> {
+    const getUrl = `${this.baseUrl}/invoice/${id}`;
+    const getResp = await this.makeRequest<unknown>(getUrl, { method: "GET" });
+    // QuickBooks GET returns { Invoice: {...} }
+    const original = (getResp as { Invoice?: Record<string, unknown> }).Invoice;
+    if (!original) {
+      throw new Error("Invoice not found or invalid response shape");
+    }
+
+    // Pick a safe subset of fields for creation
+    const allowedKeys = new Set([
+      "CustomerRef",
+      "BillEmail",
+      "BillAddr",
+      "ShipAddr",
+      "SalesTermRef",
+      "PrivateNote",
+      "CurrencyRef",
+      "CustomerMemo",
+      "Line",
+      "TxnTaxDetail",
+      "ApplyTaxAfterDiscount",
+      "AllowIPNPayment",
+      "AllowOnlinePayment",
+      "AllowOnlineCreditCardPayment",
+      "AllowOnlineACHPayment",
+    ]);
+
+    const newInvoice: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(original)) {
+      if (allowedKeys.has(k)) newInvoice[k] = v;
+    }
+
+    const createUrl = `${this.baseUrl}/invoice`;
+    return this.makeRequest<unknown>(createUrl, {
+      method: "POST",
+      body: JSON.stringify(newInvoice),
+    });
+  }
+
+  /**
+   * Create a brand new invoice from scratch.
+   */
+  async createInvoice(invoice: CreateInvoiceInput): Promise<unknown> {
+    const url = `${this.baseUrl}/invoice`;
+    return this.makeRequest<unknown>(url, {
+      method: "POST",
+      body: JSON.stringify(invoice),
+    });
   }
 }
