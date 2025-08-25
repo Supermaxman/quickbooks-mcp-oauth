@@ -25,7 +25,6 @@ export class QuickBooksMCP extends McpAgent<
   }
 
   formatResponse = (
-    description: string,
     data: unknown
   ): {
     content: Array<{ type: "text"; text: string }>;
@@ -34,11 +33,7 @@ export class QuickBooksMCP extends McpAgent<
       content: [
         {
           type: "text",
-          text: `Success! ${description}\n\nResult:\n${JSON.stringify(
-            data,
-            null,
-            2
-          )}`,
+          text: JSON.stringify(data, null, 2),
         },
       ],
     };
@@ -62,7 +57,7 @@ export class QuickBooksMCP extends McpAgent<
       "Get QuickBooks company information",
       async () => {
         const info = await this.quickBooksService.getCompanyInfo();
-        return this.formatResponse("Company info retrieved", info);
+        return this.formatResponse(info);
       }
     );
 
@@ -87,7 +82,7 @@ export class QuickBooksMCP extends McpAgent<
           page,
           pageSize
         );
-        return this.formatResponse("Invoices retrieved", invoices);
+        return this.formatResponse(invoices);
       }
     );
 
@@ -112,7 +107,7 @@ export class QuickBooksMCP extends McpAgent<
           page,
           pageSize
         );
-        return this.formatResponse("Customers retrieved", customers);
+        return this.formatResponse(customers);
       }
     );
 
@@ -123,7 +118,7 @@ export class QuickBooksMCP extends McpAgent<
       async (args) => {
         const parsed = UpdateInvoiceSchema.parse(args);
         const updated = await this.quickBooksService.updateInvoice(parsed);
-        return this.formatResponse("Invoice updated", updated);
+        return this.formatResponse(updated);
       }
     );
 
@@ -134,7 +129,7 @@ export class QuickBooksMCP extends McpAgent<
       async (args) => {
         const { Id } = CopyInvoiceSchema.parse(args);
         const created = await this.quickBooksService.copyInvoice(Id);
-        return this.formatResponse("Invoice copied", created);
+        return this.formatResponse(created);
       }
     );
 
@@ -145,7 +140,7 @@ export class QuickBooksMCP extends McpAgent<
       async (args) => {
         const parsed = CreateInvoiceSchema.parse(args);
         const created = await this.quickBooksService.createInvoice(parsed);
-        return this.formatResponse("Invoice created", created);
+        return this.formatResponse(created);
       }
     );
 
